@@ -40,6 +40,8 @@ class Core
     double movementSpeed;
     double rotationSpeed;
 
+    double movementSpeedModifier = 1.0;
+
     double previousTime = 0;
     double currentTime = 0;
     double frameTime = 0;

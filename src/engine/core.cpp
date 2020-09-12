@@ -323,15 +323,12 @@ void Core::render()
     if (static_cast<int>(frameTime) % 1000 == 0)
         printf("FPS: %i\n", static_cast<int>(1.0 / frameTime));
 
-    movementSpeed = frameTime * 5.0;
+    movementSpeed = frameTime * movementSpeedModifier;
     rotationSpeed = frameTime * 3.0;
 
     SDL_UpdateTexture(framebuffer, NULL, tempbuffer, screenWidth * sizeof(Uint32));
     SDL_RenderCopy(renderer, framebuffer, NULL, NULL);
     SDL_RenderPresent(renderer);
-
-    // constant frame rate
-    SDL_Delay((1000 / 60) - frameTime);
 
     // clean up
     delete[] tempbuffer;
@@ -339,6 +336,15 @@ void Core::render()
 
 void Core::handleKeyboardEvent(const Uint8 *keyStates)
 {
+    if (keyStates[SDL_SCANCODE_LSHIFT])
+    {
+        movementSpeedModifier = 5.0;
+    }
+    else
+    {
+        movementSpeedModifier = 2.0;
+    }
+
     if (keyStates[SDL_SCANCODE_W] || keyStates[SDL_SCANCODE_UP])
     {
         const double newXPosition = player->position.x + player->direction.x * movementSpeed;
