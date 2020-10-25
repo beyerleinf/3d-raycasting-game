@@ -6,6 +6,7 @@
 
 #include "engine/player.hpp"
 #include "engine/world.hpp"
+#include "main.hpp"
 
 // #define MAP_WIDTH 32
 // #define MAP_HEIGHT 32
@@ -27,7 +28,7 @@ class Core
     SDL_Surface *textures[2];
     SDL_Renderer *renderer;
     SDL_Texture *framebuffer;
-    Uint32 *tempbuffer;
+    Uint32 tempbuffer[SCREEN_HEIGHT][SCREEN_WIDTH];
 
     void handleMouseMovement(SDL_MouseMotionEvent mouseMotion);
     void handleKeyboardEvent(const Uint8 *keyStates);

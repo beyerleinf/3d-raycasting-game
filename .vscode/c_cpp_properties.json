@@ -1,7 +1,7 @@
 {
   "configurations": [
     {
-      "name": "Win32",
+      "name": "MinGw64",
       "includePath": [
         "${workspaceFolder}/**",
         "${vcpkgRoot}/x64-windows/include",
@@ -10,7 +10,7 @@
       ],
       "defines": ["_DEBUG", "UNICODE", "_UNICODE"],
       "windowsSdkVersion": "10.0.17763.0",
-      "compilerPath": "C:/dev/mingw64/bin/g++",
+      "compilerPath": "C:/dev/mingw64/bin/g++.exe",
       "cStandard": "c11",
       "cppStandard": "c++17",
       "intelliSenseMode": "gcc-x64"

@@ -28,7 +28,7 @@ bool Core::init()
         SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STREAMING, screenWidth, screenHeight);
 
     textures[0] = IMG_Load("res/tex/test.png");
-    textures[1] = IMG_Load("res/tex/tex2.png");
+    textures[1] = IMG_Load("res/tex/floor.png");
 
     if (textures[0] == NULL || textures[1] == NULL)
     {
@@ -71,11 +71,88 @@ bool Core::init()
 
 void Core::render()
 {
-    tempbuffer = new Uint32[screenWidth * screenHeight];
-
     SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0xFF);
     SDL_RenderClear(renderer);
 
+    // render floor and ceiling
+    for (int y = 0; y < screenHeight; y++)
+    {
+        // rayDir for leftmost ray (x = 0) and rightmost ray (x = w)
+        float rayDirX0 = player->direction.x - player->cameraPlane.x;
+        float rayDirY0 = player->direction.y - player->cameraPlane.y;
+        float rayDirX1 = player->direction.x + player->cameraPlane.x;
+        float rayDirY1 = player->direction.y + player->cameraPlane.y;
+
+        // Current y position compared to the center of the screen (the horizon)
+        int p = y - screenHeight / 2;
+
+        // Vertical position of the camera.
+        float posZ = 0.5 * screenHeight;
+
+        // Horizontal distance from the camera to the floor for the current row.
+        // 0.5 is the z position exactly in the middle between floor and ceiling.
+        float rowDistance = posZ / p;
+
+        // calculate the real world step vector we have to add for each x (parallel to camera plane)
+        // adding step by step avoids multiplications with a weight in the inner loop
+        float floorStepX = rowDistance * (rayDirX1 - rayDirX0) / screenWidth;
+        float floorStepY = rowDistance * (rayDirY1 - rayDirY0) / screenWidth;
+
+        // real world coordinates of the leftmost column. This will be updated as we step to the right.
+        float floorX = player->position.x + rowDistance * rayDirX0;
+        float floorY = player->position.y + rowDistance * rayDirY0;
+
+        for (int x = 0; x < screenWidth; ++x)
+        {
+            // the cell coord is simply got from the integer parts of floorX and floorY
+            int cellX = static_cast<int>(floorX);
+            int cellY = static_cast<int>(floorY);
+
+            // choose texture and draw the pixel
+            int floorTexture = 1;
+            SDL_Surface *floorSurface = textures[floorTexture];
+            int floorTexWidth = floorSurface->w;
+            int floorTexHeight = floorSurface->h;
+
+            // get the texture coordinate from the fractional part
+            int ftx = static_cast<int>(floorTexWidth * (floorX - cellX)) & (floorTexWidth - 1);
+            int fty = static_cast<int>(floorTexHeight * (floorY - cellY)) & (floorTexHeight - 1);
+
+            int ceilingTexture = 1;
+            SDL_Surface *ceilingSurface = textures[ceilingTexture];
+            int ceilingTexWidth = ceilingSurface->w;
+            int ceilingTexHeight = ceilingSurface->h;
+
+            // get the texture coordinate from the fractional part
+            int ctx = static_cast<int>(ceilingTexWidth * (floorX - cellX)) & (ceilingTexWidth - 1);
+            int cty = static_cast<int>(ceilingTexHeight * (floorY - cellY)) & (ceilingTexHeight - 1);
+
+            floorX += floorStepX;
+            floorY += floorStepY;
+
+            Uint32 color;
+
+            Uint8 *p;
+            Uint32 pixel;
+
+            int fbpp = floorSurface->format->BytesPerPixel;
+            int cbpp = ceilingSurface->format->BytesPerPixel;
+
+            // floor
+            p = static_cast<Uint8 *>(floorSurface->pixels + fty * floorSurface->pitch + ftx * fbpp);
+            pixel = *(Uint32 *)p;
+            pixel = (pixel >> 1) & 8355711;
+            tempbuffer[y][x] = pixel;
+
+            // ceiling (symmetrical, at screenHeight - y - 1 instead of y)
+            p = static_cast<Uint8 *>(ceilingSurface->pixels + cty * ceilingSurface->pitch + ctx * cbpp);
+            pixel = *(Uint32 *)p;
+            pixel = (pixel >> 1) & 8355711;
+            tempbuffer[screenHeight - y - 1][x] = pixel;
+        }
+    }
+
+    // render walls
     for (int x = 0; x < screenWidth; x++)
     {
         // calculate ray position and direction
@@ -240,7 +317,7 @@ void Core::render()
 
             // TODO: put into function
             int bpp = surface->format->BytesPerPixel;
-            Uint8 *p = (Uint8 *)surface->pixels + texY * surface->pitch + texX * bpp;
+            Uint8 *p = static_cast<Uint8 *>(surface->pixels + texY * surface->pitch + texX * bpp);
             Uint32 pixel = *(Uint32 *)p;
 
             // switch (bpp)
@@ -275,53 +352,16 @@ void Core::render()
                 pixel = (pixel >> 1) & 8355711;
             }
 
-            tempbuffer[y * screenWidth + x] = pixel;
-
-            // TODO: this shit is hella inefficient
-            // SDL_Color color;
-            // SDL_GetRGBA(pixel, surface->format, &color.r, &color.g, &color.b, &color.a);
-            // SDL_SetRenderDrawColor(mRenderer, color.r, color.g, color.b, color.a);
-            // SDL_RenderDrawPoint(mRenderer, x, y);
+            tempbuffer[y][x] = pixel;
         }
-
-        // switch (world->getTile(mapX, mapY)->type)
-        // {
-        // case 1:
-        //     color = {255, 0, 0}; // red
-        //     break;
-        // case 2:
-        //     color = {0, 255, 0}; // green
-        //     break;
-        // case 3:
-        //     color = {0, 0, 255}; // blue
-        //     break;
-        // case 4:
-        //     color = {255, 255, 255}; // white
-        //     break;
-        // default:;
-        //     color = {0, 255, 255}; // yellow
-        //     break;
-        // }
-
-        // give x and y sides different brightness
-        // if (side == 1)
-        // {
-        //     color.r = color.r / 2;
-        //     color.g = color.g / 2;
-        //     color.b = color.b / 2;
-        // }
-
-        // // draw the pixels of the stripe as a vertical line
-        // SDL_SetRenderDrawColor(mRenderer, color.r, color.g, color.b, color.a);
-        // SDL_RenderDrawLineF(mRenderer, x, drawStart, x, drawEnd);
     }
 
     previousTime = currentTime;
     currentTime = SDL_GetTicks();
     frameTime = (currentTime - previousTime) / 1000.0;
 
-    if (static_cast<int>(frameTime) % 1000 == 0)
-        printf("FPS: %i\n", static_cast<int>(1.0 / frameTime));
+    // if (static_cast<int>(frameTime) % 1000 == 0)
+    //     printf("FPS: %i\n", static_cast<int>(1.0 / frameTime));
 
     movementSpeed = frameTime * movementSpeedModifier;
     rotationSpeed = frameTime * 3.0;
@@ -331,7 +371,13 @@ void Core::render()
     SDL_RenderPresent(renderer);
 
     // clean up
-    delete[] tempbuffer;
+    for (int y = 0; y < screenHeight; y++)
+    {
+        for (int x = 0; x < screenWidth; x++)
+        {
+            tempbuffer[y][x] = 0;
+        }
+    }
 }
 
 void Core::handleKeyboardEvent(const Uint8 *keyStates)

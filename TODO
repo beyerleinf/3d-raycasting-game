@@ -1,9 +1,11 @@
-[-] OOP
-[-] Textures
-[] Floor and Ceiling
+[x] OOP
+[x] Textures
+[x] Floor and Ceiling
+[] Make Core::render() simpler
 [] Map loader
 [] Map editor
 [] Sprites
 [] Enemies
 [] Weapons
 [] Multiplayer
+[] Proper textures

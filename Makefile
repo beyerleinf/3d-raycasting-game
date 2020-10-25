@@ -9,7 +9,7 @@ ifeq ($(OS),Windows_NT)
 	INCLUDE_PATHS = -IC:\dev\mingw-libs\include -Iinclude
 	LIBRARY_PATHS = -LC:\dev\mingw-libs\lib
 	# COMPILER_FLAGS = -w -Wl,-subsystem,windows
-	COMPILER_FLAGS =
+	COMPILER_FLAGS = -std=c++17
 	LINKER_FLAGS = -lmingw32 -lSDL2main -lSDL2_image  -lSDL2
 else
 	# Linux specifics go here
