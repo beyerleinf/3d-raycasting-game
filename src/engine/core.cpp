@@ -317,7 +317,7 @@ void Core::render()
 
             // TODO: put into function
             int bpp = surface->format->BytesPerPixel;
-            Uint8 *p = static_cast<Uint8 *>(surface->pixels + texY * surface->pitch + texX * bpp);
+            Uint8 *p = static_cast<Uint8 *>(static_cast<Uint8 *>(surface->pixels) + texY * surface->pitch + texX * bpp);
             Uint32 pixel = *(Uint32 *)p;
 
             // switch (bpp)
@@ -371,13 +371,7 @@ void Core::render()
     SDL_RenderPresent(renderer);
 
     // clean up
-    for (int y = 0; y < screenHeight; y++)
-    {
-        for (int x = 0; x < screenWidth; x++)
-        {
-            tempbuffer[y][x] = 0;
-        }
-    }
+    memset(tempbuffer, 0, screenHeight * screenWidth);
 }
 
 void Core::handleKeyboardEvent(const Uint8 *keyStates)
