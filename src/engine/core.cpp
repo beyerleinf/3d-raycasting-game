@@ -139,13 +139,15 @@ void Core::render()
             int cbpp = ceilingSurface->format->BytesPerPixel;
 
             // floor
-            p = static_cast<Uint8 *>(floorSurface->pixels + fty * floorSurface->pitch + ftx * fbpp);
+            p = static_cast<Uint8 *>(static_cast<Uint8 *>(floorSurface->pixels) + fty * floorSurface->pitch +
+                                     ftx * fbpp);
             pixel = *(Uint32 *)p;
             pixel = (pixel >> 1) & 8355711;
             tempbuffer[y][x] = pixel;
 
             // ceiling (symmetrical, at screenHeight - y - 1 instead of y)
-            p = static_cast<Uint8 *>(ceilingSurface->pixels + cty * ceilingSurface->pitch + ctx * cbpp);
+            p = static_cast<Uint8 *>(static_cast<Uint8 *>(ceilingSurface->pixels) + cty * ceilingSurface->pitch +
+                                     ctx * cbpp);
             pixel = *(Uint32 *)p;
             pixel = (pixel >> 1) & 8355711;
             tempbuffer[screenHeight - y - 1][x] = pixel;
