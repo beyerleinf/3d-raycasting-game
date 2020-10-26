@@ -17,7 +17,7 @@ namespace ray3d
 class Core
 {
   public:
-    Core(SDL_Renderer *renderer, int screenWidth, int screenHeight);
+    Core(SDL_Renderer *renderer, Uint16 screenWidth, Uint16 screenHeight);
     ~Core();
 
     bool init();
@@ -35,17 +35,17 @@ class Core
     void render();
     void updatePlayerPosition(int x, int y);
 
-    int screenWidth;
-    int screenHeight;
+    Uint16 mScreenWidth;
+    Uint16 mScreenHeight;
 
-    double movementSpeed;
-    double rotationSpeed;
+    double mMovementSpeed;
+    double mRotationSpeed;
 
-    double movementSpeedModifier = 1.0;
+    double mMovementSpeedModifier = 1.0;
 
-    double previousTime = 0;
-    double currentTime = 0;
-    double frameTime = 0;
+    double mPreviousTime = 0;
+    double mCurrentTime = 0;
+    double mFrameTime = 0;
 };
 
 } // namespace ray3d

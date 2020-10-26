@@ -4,15 +4,11 @@
 namespace ray3d
 {
 
-Core::Core(SDL_Renderer *r, int screenW, int screenH)
+Core::Core(SDL_Renderer *r, Uint16 screenW, Uint16 screenH): renderer(r), mScreenWidth(screenW), mScreenHeight(screenH)
 {
     player = new Player(22, 12, -1, 0);
     world = new World();
     world->load();
-
-    screenWidth = screenW;
-    screenHeight = screenH;
-    renderer = r;
 }
 
 Core::~Core()
@@ -25,7 +21,7 @@ bool Core::init()
     bool result = true;
 
     framebuffer =
-        SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STREAMING, screenWidth, screenHeight);
+        SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STREAMING, mScreenWidth, mScreenHeight);
 
     textures[0] = IMG_Load("res/tex/test.png");
     textures[1] = IMG_Load("res/tex/floor.png");
@@ -75,7 +71,7 @@ void Core::render()
     SDL_RenderClear(renderer);
 
     // render floor and ceiling
-    for (int y = 0; y < screenHeight; y++)
+    for (int y = 0; y < mScreenHeight; y++)
     {
         // rayDir for leftmost ray (x = 0) and rightmost ray (x = w)
         float rayDirX0 = player->direction.x - player->cameraPlane.x;
@@ -84,10 +80,10 @@ void Core::render()
         float rayDirY1 = player->direction.y + player->cameraPlane.y;
 
         // Current y position compared to the center of the screen (the horizon)
-        int p = y - screenHeight / 2;
+        int p = y - mScreenHeight / 2;
 
         // Vertical position of the camera.
-        float posZ = 0.5 * screenHeight;
+        float posZ = 0.5 * mScreenHeight;
 
         // Horizontal distance from the camera to the floor for the current row.
         // 0.5 is the z position exactly in the middle between floor and ceiling.
@@ -95,14 +91,14 @@ void Core::render()
 
         // calculate the real world step vector we have to add for each x (parallel to camera plane)
         // adding step by step avoids multiplications with a weight in the inner loop
-        float floorStepX = rowDistance * (rayDirX1 - rayDirX0) / screenWidth;
-        float floorStepY = rowDistance * (rayDirY1 - rayDirY0) / screenWidth;
+        float floorStepX = rowDistance * (rayDirX1 - rayDirX0) / mScreenWidth;
+        float floorStepY = rowDistance * (rayDirY1 - rayDirY0) / mScreenWidth;
 
         // real world coordinates of the leftmost column. This will be updated as we step to the right.
         float floorX = player->position.x + rowDistance * rayDirX0;
         float floorY = player->position.y + rowDistance * rayDirY0;
 
-        for (int x = 0; x < screenWidth; ++x)
+        for (int x = 0; x < mScreenWidth; ++x)
         {
             // the cell coord is simply got from the integer parts of floorX and floorY
             int cellX = static_cast<int>(floorX);
@@ -150,15 +146,15 @@ void Core::render()
                                      ctx * cbpp);
             pixel = *(Uint32 *)p;
             pixel = (pixel >> 1) & 8355711;
-            tempbuffer[screenHeight - y - 1][x] = pixel;
+            tempbuffer[mScreenHeight - y - 1][x] = pixel;
         }
     }
 
     // render walls
-    for (int x = 0; x < screenWidth; x++)
+    for (int x = 0; x < mScreenWidth; x++)
     {
         // calculate ray position and direction
-        double cameraX = 2 * x / static_cast<double>(screenWidth) - 1; // x-coordinate in camera space
+        double cameraX = 2 * x / static_cast<double>(mScreenWidth) - 1; // x-coordinate in camera space
         double rayDirX = player->direction.x + player->cameraPlane.x * cameraX;
         double rayDirY = player->direction.y + player->cameraPlane.y * cameraX;
 
@@ -249,19 +245,19 @@ void Core::render()
         }
 
         // calculate height of line to draw on screen
-        int lineHeight = static_cast<int>(screenHeight / perpWallDist);
+        int lineHeight = static_cast<int>(mScreenHeight / perpWallDist);
 
         // calculate lowest and highest pixel to fill in current stripe
-        int drawStart = -lineHeight / 2 + screenHeight / 2;
+        int drawStart = -lineHeight / 2 + mScreenHeight / 2;
         if (drawStart < 0)
         {
             drawStart = 0;
         }
 
-        int drawEnd = lineHeight / 2 + screenHeight / 2;
-        if (drawEnd >= screenHeight)
+        int drawEnd = lineHeight / 2 + mScreenHeight / 2;
+        if (drawEnd >= mScreenHeight)
         {
-            drawEnd = screenHeight - 1;
+            drawEnd = mScreenHeight - 1;
         }
 
         WorldTile *tile = world->getTile(mapX, mapY);
@@ -310,7 +306,7 @@ void Core::render()
 
         // How much to increase the texture coordinate per screen pixel
         double step = static_cast<double>(texHeight) / static_cast<double>(lineHeight);
-        double texPos = (drawStart - screenHeight / 2 + lineHeight / 2) * step;
+        double texPos = (drawStart - mScreenHeight / 2 + lineHeight / 2) * step;
 
         for (int y = drawStart; y < drawEnd; y++)
         {
@@ -358,44 +354,44 @@ void Core::render()
         }
     }
 
-    previousTime = currentTime;
-    currentTime = SDL_GetTicks();
-    frameTime = (currentTime - previousTime) / 1000.0;
+    mPreviousTime = mCurrentTime;
+    mCurrentTime = SDL_GetTicks();
+    mFrameTime = (mCurrentTime - mPreviousTime) / 1000.0;
 
     // if (static_cast<int>(frameTime) % 1000 == 0)
     //     printf("FPS: %i\n", static_cast<int>(1.0 / frameTime));
 
-    movementSpeed = frameTime * movementSpeedModifier;
-    rotationSpeed = frameTime * 3.0;
+    mMovementSpeed = mFrameTime * mMovementSpeedModifier;
+    mRotationSpeed = mFrameTime * 3.0;
 
-    SDL_UpdateTexture(framebuffer, NULL, tempbuffer, screenWidth * sizeof(Uint32));
+    SDL_UpdateTexture(framebuffer, NULL, tempbuffer, mScreenWidth * sizeof(Uint32));
     SDL_RenderCopy(renderer, framebuffer, NULL, NULL);
     SDL_RenderPresent(renderer);
 
     // clean up
-    memset(tempbuffer, 0, screenHeight * screenWidth);
+    memset(tempbuffer, 0, mScreenHeight * mScreenWidth);
 }
 
 void Core::handleKeyboardEvent(const Uint8 *keyStates)
 {
     if (keyStates[SDL_SCANCODE_LSHIFT])
     {
-        movementSpeedModifier = 5.0;
+        mMovementSpeedModifier = 5.0;
     }
     else
     {
-        movementSpeedModifier = 2.0;
+        mMovementSpeedModifier = 2.0;
     }
 
     if (keyStates[SDL_SCANCODE_W] || keyStates[SDL_SCANCODE_UP])
     {
-        const double newXPosition = player->position.x + player->direction.x * movementSpeed;
+        const double newXPosition = player->position.x + player->direction.x * mMovementSpeed;
         if (world->isValidPosition(static_cast<int>(newXPosition), static_cast<int>(player->position.y)))
         {
             player->position.x = newXPosition;
         }
 
-        const double newYPosition = player->position.y + player->direction.y * movementSpeed;
+        const double newYPosition = player->position.y + player->direction.y * mMovementSpeed;
         if (world->isValidPosition(static_cast<int>(player->position.x), static_cast<int>(newYPosition)))
         {
             player->position.y = newYPosition;
@@ -403,13 +399,13 @@ void Core::handleKeyboardEvent(const Uint8 *keyStates)
     }
     else if (keyStates[SDL_SCANCODE_S] || keyStates[SDL_SCANCODE_DOWN])
     {
-        const double newXPosition = player->position.x - player->direction.x * movementSpeed;
+        const double newXPosition = player->position.x - player->direction.x * mMovementSpeed;
         if (world->isValidPosition(static_cast<int>(newXPosition), static_cast<int>(player->position.y)))
         {
             player->position.x = newXPosition;
         }
 
-        const double newYPosition = player->position.y - player->direction.y * movementSpeed;
+        const double newYPosition = player->position.y - player->direction.y * mMovementSpeed;
         if (world->isValidPosition(static_cast<int>(player->position.x), static_cast<int>(newYPosition)))
         {
             player->position.y = newYPosition;
@@ -418,13 +414,13 @@ void Core::handleKeyboardEvent(const Uint8 *keyStates)
 
     if (keyStates[SDL_SCANCODE_A] || keyStates[SDL_SCANCODE_LEFT])
     {
-        const double newXPosition = player->position.x - player->direction.y * movementSpeed;
+        const double newXPosition = player->position.x - player->direction.y * mMovementSpeed;
         if (world->isValidPosition(static_cast<int>(newXPosition), static_cast<int>(player->position.y)))
         {
             player->position.x = newXPosition;
         }
 
-        const double newYPosition = player->position.y - (player->direction.x * -1) * movementSpeed;
+        const double newYPosition = player->position.y - (player->direction.x * -1) * mMovementSpeed;
         if (world->isValidPosition(static_cast<int>(player->position.x), static_cast<int>(newYPosition)))
         {
             player->position.y = newYPosition;
@@ -432,13 +428,13 @@ void Core::handleKeyboardEvent(const Uint8 *keyStates)
     }
     else if (keyStates[SDL_SCANCODE_D] || keyStates[SDL_SCANCODE_RIGHT])
     {
-        const double newXPosition = player->position.x + player->direction.y * movementSpeed;
+        const double newXPosition = player->position.x + player->direction.y * mMovementSpeed;
         if (world->isValidPosition(static_cast<int>(newXPosition), static_cast<int>(player->position.y)))
         {
             player->position.x = newXPosition;
         }
 
-        const double newYPosition = player->position.y + (player->direction.x * -1) * movementSpeed;
+        const double newYPosition = player->position.y + (player->direction.x * -1) * mMovementSpeed;
         if (world->isValidPosition(static_cast<int>(player->position.x), static_cast<int>(newYPosition)))
         {
             player->position.y = newYPosition;
